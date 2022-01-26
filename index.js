@@ -9,7 +9,7 @@ const app = express()
 dotenv.config()
 app.use(cors())
 app.use(express.json())
-const PORT = 9000 || process.env.PORT
+const PORT = process.env.PORT || 9000
 const MONGO_URL = process.env.DB_URL
 
 const createConnection = async () => {
