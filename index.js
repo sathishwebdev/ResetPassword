@@ -82,6 +82,9 @@ app.get('/users', async (req, res)=>{
     res.send({users,numOfUsers: users.length, result : true})
 })
 
+app.get('/', (req, res)=>{
+res.send('hello')
+})
 
 app.listen(PORT, ()=>{console.log('Server started at ' + PORT)})
 
