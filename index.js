@@ -79,7 +79,16 @@ app.post('/signup', async (req, res)=>{
 app.get('/users', async (req, res)=>{
     let users = await client.db("users").collection("creds").find({}).toArray()
 
-    res.send({users,numOfUsers: users.length, result : true})
+    res.send({data : users,numOfUsers: users.length, result : true})
+})
+
+app.get('/user/:username', async (req, res)=>{
+
+    let users = await client.db("users").collection("creds").findOne({username : req.params.username})
+!users ? 
+    res.send({data : users, result : false})
+:
+    res.send({data : users, result : true})
 })
 
 app.get('/', (req, res)=>{

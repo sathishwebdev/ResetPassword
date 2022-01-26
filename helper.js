@@ -12,6 +12,22 @@ const keyGenerator = async (password)=>{
 
 const getUserByName = async (name) => await client.db("users").collection("creds").findOne({username: name})
 
+
+const updateDataInMail =async (data) => {
+    let responce = await client
+    .db("users")
+    .collection("mail")
+    .findOne({mailId : data.email})
+
+    let update = await client
+    .db("users")
+    .collection("mail")
+    .updateOne({mailId : data.email}, {$set : {usernames : [...responce.usernames, data.username]}})
+
+}
+
+
+
 // create user   
 
 const getSignup = async (data)=>{
@@ -21,8 +37,21 @@ const getSignup = async (data)=>{
     .collection("creds")
     .insertOne(data)
 
+    let isNewMailId = await client
+    .db("users")
+    .collection("mail").findOne({mailId : data.email})
+
+    !isNewMailId ? await client
+    .db("users")
+    .collection("mail")
+    .insertOne({mailId : data.email, usernames : [data.username], DetailsOfIds : [data]}) :
+    updateDataInMail(data)
+    
     return {data,responce }
 }
+
+
+
 export {
     keyGenerator,
     getUserByName,
