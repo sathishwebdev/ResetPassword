@@ -15,6 +15,7 @@
     "cors": "^2.8.5",
     "dotenv": "^14.3.0",
     "express": "^4.17.2",
+    "firebase": "^9.6.4",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.3.1",
     "nodemailer": "^6.7.2",
