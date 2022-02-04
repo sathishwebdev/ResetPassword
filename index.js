@@ -2,8 +2,11 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { MongoClient } from 'mongodb';
+import { ObjectId } from 'bson';
 import nodemailer from 'nodemailer'
-import {getSignup, keyGenerator, getUserByName} from './helper.js'
+import {getSignup, keyGenerator, getUserByName, forgetPassword, RegisterRequest} from './helper.js'
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const app = express()
 dotenv.config()
@@ -28,52 +31,48 @@ app.post('/signup', async (req, res)=>{
     let checkUserAvailability = await getUserByName(data.username)
     
     // check password strength 
-    let passwordStrength = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/.test(`${data.password}`)
+    let passwordStrength = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&_])[A-Za-z\d@$!%*#?&_]{6,}$/.test(`${data.password}`)
 
     // check username
     let usernameStrength = /^[A-Za-z\d_]{4,}$/.test(`${data.username}`)
 
     // conditional statements
     if(checkUserAvailability){
-        res.send({message : "Username Already Exist - Better Luck Next Time 😈"})
+        res.status(400).send({result:false, message : "Username Already Exist - Better Luck Next Time 😈"})
     }else if (!passwordStrength){
-        res.send({message : `Password must be longer \n \t - Atleast 6 characters \n \t - Atleast one letter \n \t - Atleast one number \n \t - Atleast one special characters `})
+        res.status(400).send({result:false, message : `Password must be longer \n \t - Atleast 6 characters \n \t - Atleast one letter \n \t - Atleast one number \n \t - Atleast one special characters `})
     }else if (!usernameStrength){
-        res.send({message : `Username should be min 3 characters - Only letters, numbers and _ can be accepteable`})
+        res.status(400).send({result:false, message : `Username should be min 3 characters - Only letters, numbers and _ can be accepteable`})
     }
     else{
         data.password =  hashWord
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth:{
-                user : process.env.MAIL,
-                pass: process.env.MAIL_KEY,
-                secure : true
-            }
-        })
-    
-        let details = {
-            from : process.env.MAIL,
-            to: data.email,
-            subject : "Verify Your Account | SK ",
-            html : `<div class="text-center">
-                <h1>Verify Your Account</h1><small>${data.username}</small><br/><p>test mail</p><button>Verify</button>
-            </div>` 
-        }
-    
-         transporter.sendMail(details, async (err)=>{
-            if(err) {
-                 console.log(Error, err)
-                res.status(400).send({result:false, error: err.message, mail: false})
-            }
-            else {
-                console.log('Mail sent')                
-                let dbResponce = await getSignup(data)
-                res.status(200).send({result : true, response: dbResponce, mail: true})
-                }
-            })
-    
+        let dbResponce = await getSignup(data)
+        res.status(200).send({result : true, response: dbResponce, mail: true})
     }
+               
+})
+
+app.post('/login', async (req,res)=>{
+    const {username, password} = req.body ;
+
+    // check user 
+
+    const getUser = await getUserByName(username)
+    
+    if(!getUser){
+        res.status(401).send({message: "Invalid Credentials 💔", result: false})
+    }else if(getUser){
+    //  check credentails
+    const checkCred = await bcrypt.compare(password, getUser.password )
+
+    if (checkCred){
+        // token creation
+        const token =  jwt.sign(getUser._id.toJSON(), "SKWONIEARN")
+        res.send({message: 'Log in Successfull 🤗', apiKey : token, result: true, response: getUser})
+    } else if(!checkCred) {
+        res.send({message:'Invalid Credentials 💔'})
+    }
+}
 })
 
 app.get('/users', async (req, res)=>{
@@ -91,9 +90,96 @@ app.get('/user/:username', async (req, res)=>{
     res.send({data : users, result : true})
 })
 
+// get request
+
+app.get('/request/:requestId', async (req, res)=>{
+
+    let getLog = await client.db("users").collection("requests").findOne({_id : ObjectId(req.params.requestId)})
+if(!getLog){
+    res.send({data : getLog, result : false})
+}else{
+    let makeVerify = await client
+    .db("users")
+    .collection("requests")
+    .updateOne({_id : ObjectId(req.params.requestId)}, {$set : {verify : req.query.verify === 'true' ? true : false}})
+
+    res.send({data : getLog, result : true})
+}
+    
+})
+
 app.get('/', (req, res)=>{
 res.send('hello')
 })
+
+app.post('/forgetpassword',async (req,res)=>{
+    let {username} = req.body
+
+    
+    const getUser = await getUserByName(username)
+
+    if(!getUser){
+        res.status(401).send({message: "Invalid user 💔", result: false})
+    }else if(getUser){
+        let FPToken = await forgetPassword(getUser)
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth:{
+                user : process.env.MAIL,
+                pass: process.env.MAIL_KEY,
+                secure : true
+            }
+        })
+    
+        let details = {
+            from : process.env.MAIL,
+            to: getUser.email,
+            subject : "Change Your Password | Secuirity | SK ",
+            html : `<div class="text-center">
+                <h1>Change Your Password</h1><small>${getUser.username}</small><br/><p>test mail</p><a href="http://localhost:3000/${getUser.username}/forgetpassword/k/${FPToken}" target='_blank' >http://localhost:3000/${getUser.username}/forgetpassword/k/${FPToken}</a>
+            </div>` 
+        }
+    
+         transporter.sendMail(details, async (err)=>{
+            if(err) {
+                res.status(400).send({result:false, message: err.message, mail: false})
+            }
+            else {           
+                 let registeration = await RegisterRequest(getUser)
+                res.status(200).send({result : true,message:`Request send to ${getUser.email}`, mail: true, registeration})
+                }
+       })
+    }
+})
+
+//  verify and change password
+
+app.post('/verify/:userName', async (req, res)=>{
+    let key = req.query.key
+    let username = req.params.userName
+    let {password} = req.body
+    let users = await client.db("users").collection("creds").findOne({username : username})
+
+    if(users.FPT === key){
+        // check password strength 
+    let passwordStrength = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&_])[A-Za-z\d@$!%*#?&_]{6,}$/.test(`${password}`)
+    if (!passwordStrength){
+        res.status(400).send({result:false, message : `Password must be longer \n \t - Atleast 6 characters \n \t - Atleast one letter \n \t - Atleast one number \n \t - Atleast one special characters `})
+    }else{
+        const hashWord = await keyGenerator(password) 
+        let update = await client
+        .db("users")
+        .collection("creds")
+        .updateOne({email : users.email}, {$set : {password : hashWord }})
+        
+        res.status(200).send({result : true, response: update, verify: true})
+    }
+        
+    
+    }
+    
+})
+
 
 app.listen(PORT, ()=>{console.log('Server started at ' + PORT)})
 
