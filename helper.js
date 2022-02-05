@@ -76,7 +76,7 @@ const forgetPassword = async (data) =>{
     let update = await client
     .db("users")
     .collection("creds")
-    .updateOne({email : data.email}, {$set : {FPT : FPTKey }})
+    .updateOne({username : data}, {$set : {FPT : FPTKey }})
 
     return FPTKey
 }

@@ -121,7 +121,7 @@ app.post('/forgetpassword',async (req,res)=>{
     if(!getUser){
         res.status(401).send({message: "Invalid user 💔", result: false})
     }else if(getUser){
-        let FPToken = await forgetPassword(getUser)
+        let FPToken = await forgetPassword(username)
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth:{
