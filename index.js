@@ -172,7 +172,7 @@ app.post('/changepassword/:userName', async (req, res)=>{
         let update = await client
         .db("users")
         .collection("creds")
-        .updateOne({email : users.email}, {$set : {password : hashWord }})
+        .updateOne({username : username}, {$set : {password : hashWord }})
         await client.db("users").collection("creds").updateOne({username : username}, {$set:{FPT : null}})
         res.status(200).send({result : true, message:"successfully changed !", response: update, verify: true})
     }
