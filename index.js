@@ -136,7 +136,7 @@ app.post('/forgetpassword',async (req,res)=>{
             to: getUser.email,
             subject : "Change Your Password | Secuirity | SK ",
             html : `<div class="text-center">
-                <h1>Change Your Password</h1><small>${getUser.username}</small><br/><p>test mail</p><a href="http://localhost:3000/${getUser.username}/forgetpassword/k/?key=${FPToken}" target='_blank' >http://localhost:3000/${getUser.username}/forgetpassword/k/${FPToken}</a>
+                <h1>Change Your Password</h1><small>${getUser.username}</small><br/><p>test mail</p><a class="btn btn-primary" href="https://auth-template-sk.netlify.app/${getUser.username}/forgetpassword/k/?key=${FPToken}" target='_blank' >Click here to change Password</a>
             </div>` 
         }
     
