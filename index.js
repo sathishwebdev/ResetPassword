@@ -136,7 +136,7 @@ app.post('/forgetpassword',async (req,res)=>{
             to: getUser.email,
             subject : "Change Your Password | Secuirity | SK ",
             html : `<div class="text-center">
-                <h1>Change Your Password</h1><small>${getUser.username}</small><br/><p>test mail</p><a href="http://localhost:3000/${getUser.username}/forgetpassword/k/${FPToken}" target='_blank' >http://localhost:3000/${getUser.username}/forgetpassword/k/${FPToken}</a>
+                <h1>Change Your Password</h1><small>${getUser.username}</small><br/><p>test mail</p><a href="http://localhost:3000/${getUser.username}/forgetpassword/k/?key=${FPToken}" target='_blank' >http://localhost:3000/${getUser.username}/forgetpassword/k/${FPToken}</a>
             </div>` 
         }
     
@@ -154,13 +154,15 @@ app.post('/forgetpassword',async (req,res)=>{
 
 //  verify and change password
 
-app.post('/verify/:userName', async (req, res)=>{
+app.post('/changepassword/:userName', async (req, res)=>{
     let key = req.query.key
     let username = req.params.userName
     let {password} = req.body
     let users = await client.db("users").collection("creds").findOne({username : username})
 
     if(users.FPT === key){
+    
+        await client.db("users").collection("creds").updateOne({username : username}, {$set:{FPT : null}})
         // check password strength 
     let passwordStrength = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&_])[A-Za-z\d@$!%*#?&_]{6,}$/.test(`${password}`)
     if (!passwordStrength){
@@ -176,6 +178,8 @@ app.post('/verify/:userName', async (req, res)=>{
     }
         
     
+    }else{
+        res.send({result: false , verify: false, response: null})
     }
     
 })
