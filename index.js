@@ -174,12 +174,12 @@ app.post('/changepassword/:userName', async (req, res)=>{
         .collection("creds")
         .updateOne({email : users.email}, {$set : {password : hashWord }})
         
-        res.status(200).send({result : true, response: update, verify: true})
+        res.status(200).send({result : true, message:"successfully changed !", response: update, verify: true})
     }
         
     
     }else{
-        res.send({result: false , verify: false, response: null})
+        res.send({result: false ,message : "error", verify: false, response: null})
     }
     
 })
