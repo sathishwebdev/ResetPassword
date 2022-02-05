@@ -162,7 +162,7 @@ app.post('/changepassword/:userName', async (req, res)=>{
 
     if(users.FPT === key){
     
-        await client.db("users").collection("creds").updateOne({username : username}, {$set:{FPT : null}})
+        
         // check password strength 
     let passwordStrength = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&_])[A-Za-z\d@$!%*#?&_]{6,}$/.test(`${password}`)
     if (!passwordStrength){
@@ -173,7 +173,7 @@ app.post('/changepassword/:userName', async (req, res)=>{
         .db("users")
         .collection("creds")
         .updateOne({email : users.email}, {$set : {password : hashWord }})
-        
+        await client.db("users").collection("creds").updateOne({username : username}, {$set:{FPT : null}})
         res.status(200).send({result : true, message:"successfully changed !", response: update, verify: true})
     }
         
